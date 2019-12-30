@@ -1,0 +1,176 @@
+extends layout.pug
+
+block scripts
+  script.
+    const [createUserForm, getUsers, createExercises, getExercises] = document.forms;
+    const url = '#{url}'
+    createUserForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const elements = event.target.elements
+      
+      const data = {
+        username: elements.username.value
+      }
+      
+      fetch(`${url}api/exercise/new-user`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+      .then(response => response.text())
+      .then(text => {
+        console.log(text)      
+      })
+      .catch(error => {
+        console.log(error)
+      });
+    });
+    
+    getUsers.addEventListener("submit", (event) => {
+      event.preventDefault();
+      
+      fetch(`${url}api/exercise/users`)
+        .then(pr => pr.json())
+        .then(items => {
+          const usersList = document.getElementById('users');
+          
+          while(usersList.lastChild) {
+              usersList.removeChild(usersList.lastChild);
+          }
+        
+          items.forEach(({_id, username, ...rest}) => {
+            
+            const li = document.createElement("li");
+            li.dataset.id = _id;
+            li.appendChild(document.createTextNode(`${_id} ${username}`));
+            usersList.appendChild(li);
+          });
+        })
+    });
+    
+    createExercises.addEventListener("submit", (event) => {
+      event.preventDefault();
+      
+      const elements = event.target.elements
+      
+      const data = {
+        userId: elements.userId.value,
+        description: elements.description.value,
+        duration: elements.duration.value,
+        date: elements.date.value
+      }
+      console.log(data)
+      
+      fetch(`${url}api/exercise/add`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+      })
+        .then(pr => pr.text())
+        .then(items => {
+          console.log(items)
+        })
+    });
+    
+    getExercises.addEventListener("submit", (event) => {
+      event.preventDefault();
+      
+      const elements = event.target.elements
+      const paramsObject = {
+        userId: elements.userId1.value,
+        from: elements.from.value,
+        to: elements.to.value,
+        limit: elements.limit.value
+      }
+      
+      const params = new URLSearchParams(paramsObject).toString()
+      
+      fetch(`${url}api/exercise/log?${params}`)
+        .then(pr => pr.text())
+        .then(exercises => {
+          const element = document.getElementById('exercises')
+          element.innerText = exercises;
+        })
+    });
+    
+
+block body
+    h1.header API Project: #{title}
+    
+    .item
+      h2 Usage
+      .apis
+        .apis__element
+          .apis__header
+            span.httpMethod.httpMethod--post POST
+            span Create User
+          p.apis__url #{url}api/exercise/new-user
+          form
+            .field
+              label(class="label", for="username") Username
+              input(required, id="username", type="text", name="username", placeholder="Type in username...")
+            .field
+              button.submit Send
+        .apis__element
+          .apis__header
+            span.httpMethod.httpMethod--get GET
+            span Users
+            p.apis__url #{url}api/exercise/users
+          form
+            .field
+              button.submit Send
+          ul#users
+        .apis__element
+          .apis__header
+            span.httpMethod.httpMethod--post POST
+            span Create Exercise
+          p.apis__url #{url}api/exercise/add
+          form
+            .field
+              label(class="label", for="userId") User
+              input(required, id="userId", type="text", name="userId", placeholder="Type in userId...")
+            .field
+              label(class="label", for="desription") Description
+              textarea(id="description", type="text", name="description", placeholder="Type in description...")
+            .field
+              label(class="label", for="duration") Duration
+              input(required, id="duration", type="text", name="duration", placeholder="Type in duration...")
+            .field
+              label(class="label", for="date") Date
+              input(required, id="date", type="text", name="date", placeholder="Type in date...")
+            .field
+              button.submit Send
+        div.apis__element
+          .apis__header
+            span.httpMethod.httpMethod--get GET
+            span Exercises
+          p.apis__url #{url}api/exercise/log
+          form
+            .field
+              label(class="label", for="userId1") User
+              input(required, id="userId1", type="text", name="userId1", placeholder="Type in userId...")
+            .field
+              label(class="label", for="from") From
+              input(id="from", type="text", name="from", placeholder="Type in date...")
+            .field
+              label(class="label", for="to") To
+              input(id="to", type="text", name="to", placeholder="Type in date...")
+            .field
+              label(class="label", for="limit") Limit
+              input(id="limit", type="text", name="limit", placeholder="Limit...")
+            .field
+              button.submit Send
+          div#exercises
+
+    .item.userStory
+      h2 User Story
+      ol
+        li I can create a user by posting form data username to /api/exercise/new-user and returned will be an object with username and _id.
+        li I can get an array of all users by getting api/exercise/users with the same info as when creating a user.
+        li I can add an exercise to any user by posting form data userId(_id), description, duration, and optionally date to /api/exercise/add. If no date supplied it will use current date. App will return the user object with the exercise fields added.
+        li I can retrieve a full exercise log of any user by getting /api/exercise/log with a parameter of userId(_id). App will return the user object with added array log and count (total exercise count).
+        li I can retrieve part of the log of any user by also passing along optional parameters of from & to or limit. (Date format yyyy-mm-dd, limit = int)    
